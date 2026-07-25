@@ -1204,19 +1204,21 @@ function renderReticle(){
     });
   }
 
-  // elevation holdover marks + range labels
+  // elevation holdover marks + range labels.
+  // Label whole-number marks (1,2,3 …) not half marks; for custom circles label every one.
+  const isWhole=v=>Math.abs(v-Math.round(v))<1e-6;
   const dense=rows.length>9;
   rows.forEach((r,i)=>{
     const y=CY+r.mark*ppu;
     if(y>CY+R-10)return;
-    const half=(i%2===0||!dense)?15:9;
+    const labelIt=custom || !dense || isWhole(r.mark) || i===rows.length-1;
+    const half=labelIt?15:9;
     if(custom){
       g+='<circle cx="'+CX+'" cy="'+y.toFixed(1)+'" r="4.6" fill="none" stroke="'+ink+'" stroke-width="1.8"/>';
     }else{
       g+='<line x1="'+(CX-half)+'" y1="'+y.toFixed(1)+'" x2="'+(CX+half)+'" y2="'+y.toFixed(1)+'" stroke="'+ink+'" stroke-width="1.8"/>';
     }
-    const showLabel=!dense||i%2===0||i===rows.length-1;
-    if(showLabel){
+    if(labelIt){
       g+='<line x1="'+(CX+half+3)+'" y1="'+y.toFixed(1)+'" x2="'+(CX+R*0.60)+'" y2="'+y.toFixed(1)+'" stroke="'+dim+'" stroke-width="0.7" stroke-dasharray="2 2"/>';
       g+='<text x="'+(CX+R*0.62)+'" y="'+(y+3.6).toFixed(1)+'" font-size="13" font-weight="700" fill="'+ink+'" font-family="monospace">'+Math.round(r.rangeYd)+'</text>';
       g+='<text x="'+(CX-half-5)+'" y="'+(y+3.4).toFixed(1)+'" font-size="9.5" text-anchor="end" fill="'+dim+'" font-family="monospace">'+fmtHold(r.mark)+'</text>';
