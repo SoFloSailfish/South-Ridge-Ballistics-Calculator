@@ -136,6 +136,12 @@
     display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:6px;
   }
   .card-head b { font-size:15px; letter-spacing:.12em; }
+  .card-brand { display:flex; align-items:center; gap:12px; }
+  .card-logo { width:52px; height:52px; flex-shrink:0; }
+  .card-brandtext { display:flex; flex-direction:column; gap:1px; }
+  .card-name { font-size:15px; letter-spacing:.13em; font-weight:700; line-height:1.15; }
+  .card-type { font-size:10.5px; letter-spacing:.15em; color:#4A463A; }
+  @media print { .card-logo { width:46px; height:46px; } }
   .card-head time { font-size:11px; }
   .meta {
     display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
@@ -209,6 +215,9 @@
       <p>Switching loads without re-zeroing from scratch. Pick the load you're changing to (from the factory list, or <b>Custom / enter manually</b> for anything not in it), set the <b>new zero distance</b> you want, and press <b>Compute</b>. The tool reports how many clicks to dial and which direction. <b>Switch To This Load</b> then applies it to your whole setup.</p>
       <div class="tip">This is the <b>ballistic</b> difference between the two loads — it gets you on paper. A different bullet can also shift point of impact in your particular barrel for reasons no calculator can predict, so always confirm with a group.</div>
 
+      <h3>Reticle View</h3>
+      <p>A scaled diagram of your reticle with each holdover mark labeled with the range it actually hits for your load. It is drawn from the subtension values you enter — evenly spaced hashes or custom BDC circles — so it works for any scope, including ones no database covers. For SFP optics the drawing reflects your current magnification. Print it and you have a picture of exactly what you'll see through the glass, annotated with your yardages.</p>
+
       <h3>Card Range &amp; Trajectory Graph</h3>
       <p><b>Start / End / Step</b> set the distances shown on the DOPE card. <b>Time of flight</b> and <b>Trajectory graph</b> are optional toggles — the graph plots bullet path vs. line of sight with your zero and max ordinate marked.</p>
 
@@ -229,7 +238,7 @@
   </div>
   <header class="no-print">
     <div class="brand">
-      <img src="icon-192.png" alt="" class="brand-mark" onerror="this.style.display='none'">
+      <img src="logo.svg" alt="" class="brand-mark" onerror="this.onerror=null;this.src='icon-192.png'">
       <div>
         <h1>South Ridge <span>Ballistics</span></h1>
         <p>Point-mass solver · G1/G7 drag · DOPE &amp; BDC range cards</p>
@@ -391,7 +400,10 @@
 
       <section class="panel">
         <h2>BDC / Reticle Card</h2>
-        <div class="checks"><label><input type="checkbox" id="bdcOn"> Show BDC reticle card</label></div>
+        <div class="checks">
+          <label><input type="checkbox" id="bdcOn"> Show BDC reticle card</label>
+          <label><input type="checkbox" id="reticleOn"> Show reticle view</label>
+        </div>
         <div class="grid2">
           <label class="field"><span>Reticle type</span>
             <select id="bdcType" onchange="bdcTypeChanged()">
@@ -419,6 +431,7 @@
       <div class="dope-card" id="card"></div>
       <div class="dope-card" id="graphCard" style="margin-top:18px"></div>
       <div class="dope-card" id="bdcCard" style="margin-top:18px"></div>
+      <div class="dope-card" id="reticleCard" style="margin-top:18px"></div>
       <p class="note-under no-print">
         Computed dope is a starting point — true it with real impacts, and chronograph
         actual muzzle velocity before trusting drops past ~300 yd. ELEV values are
@@ -752,7 +765,7 @@ const $=id=>document.getElementById(id);const DEFAULTS={
   pMode:"alt", stn:29.92, incline:0,
   start:50, end:300, step:50, unit:"MIL", click:0.1, tof:false, graphOn:false,
   bdcOn:true, bdcIncr:0.5, bdcCount:12, focal:"ffp", calMag:16, curMag:16,
-  bdcType:"even", bdcMarks:""
+  bdcType:"even", bdcMarks:"", reticleOn:true
 };
 const FIELDS=Object.keys(DEFAULTS);
 const NUMS=["gr","bc","mv","hob","zero","temp","alt","rh","wind","clock","start","end","step","click","bdcIncr","bdcCount","stn","incline","calMag","curMag"];
@@ -858,6 +871,7 @@ function recalc(){
   renderCard();
   renderGraph();
   renderBdc();
+  renderReticle();
 }
 
 function trueDope(){
@@ -980,6 +994,13 @@ const fmtAdj=v=>{const s=Math.abs(v)<.05?0:v;return(s<0?"−":"")+Math.abs(s).to
 const fmtClicks=v=>{const c=Math.round(Math.abs(v)<.5?0:v);return(c<0?"−":"")+Math.abs(c);};
 const fmtHold=v=>v===0?"CTR":v.toFixed(1);
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const cardHead=(type,extra)=>
+ '<div class="card-head"><div class="card-brand">'+
+ '<img src="card-logo.png" class="card-logo" alt="" onerror="this.style.display=\'none\'">'+
+ '<div class="card-brandtext"><b class="card-name">SOUTH RIDGE BALLISTICS</b>'+
+ '<span class="card-type">'+type+(extra||'')+'</span></div></div>'+
+ '<time>'+new Date().toLocaleDateString("en-US",{year:"numeric",month:"short",day:"numeric"})+
+ '</time></div>';
 
 function renderCard(){
   const{s,res,windSide}=latest;
@@ -990,7 +1011,7 @@ function renderCard(){
   if(s.tof)heads.push("TOF\ns");
   heads.push("ACTUAL / NOTES\n ");
   let html=
-   '<div class="card-head"><b>DATA ON PREVIOUS ENGAGEMENT</b><time>'+today+'</time></div>'+
+   cardHead('DATA ON PREVIOUS ENGAGEMENT')+
    '<div class="meta">'+
    '<div><b>RIFLE:</b> '+esc(s.rifleName||"—")+'</div>'+
    '<div><b>CALIBER:</b> '+esc(s.caliber||"—")+'</div>'+
@@ -1026,7 +1047,7 @@ function renderCard(){
    '<span>MAX ORD: +'+m.maxOrdIn.toFixed(1)+'" @ '+Math.round(m.maxOrdYd)+' yd</span>'+
    (m.nearZero!==null?'<span>NEAR ZERO: '+Math.round(m.nearZero)+' yd</span>':"")+
    sonic+'<span>ELEV = dial/hold UP · negative = below zero range</span>'+
-   '<span style="margin-left:auto;letter-spacing:.1em;opacity:.75">SOUTH RIDGE BALLISTICS</span></div>';
+   '</div>';
   $("card").innerHTML=html;
 }
 
@@ -1047,7 +1068,7 @@ function renderBdc(){
     ? esc(s.scopeName||"—")+' · '+U+' SFP · true @ '+s.calMag+'× · shown @ '+s.curMag+'×'
     : esc(s.scopeName||"—")+' · '+U+' reticle'+(s.focal==="ffp"?' (FFP)':'');
   const magTag=sfp?(' @ '+s.curMag+'×'):(s.focal==="sfp"?(' @ '+s.curMag+'×'):'');
-  let html='<div class="card-head"><b>BDC / RETICLE HOLDS'+(magTag?'<span style="color:#C2543F">'+magTag+'</span>':'')+'</b><time>'+today+'</time></div>'+
+  let html=cardHead('BDC / RETICLE HOLDS',(magTag?'<span style="color:#C2543F">'+magTag+'</span>':''))+
    '<div class="meta">'+
    '<div><b>RIFLE:</b> '+esc(s.rifleName||"—")+'</div>'+
    '<div><b>LOAD:</b> '+esc(s.ammoName||"—")+' · MV '+s.mv+' fps</div>'+
@@ -1089,7 +1110,7 @@ function renderBdc(){
      ?'<span>'+markLabel+' = value on the reticle; EFF HOLD = its true value at '+s.curMag+'×.</span>'
      :'<span>Hold the listed '+(custom?"circle":"reticle mark")+'; rounds strike at the paired range.</span>')+
    '<span>CTR = center crosshair (zero). Wind at full value from '+s.clock+" o'clock.</span>"+
-   '<span style="margin-left:auto;letter-spacing:.1em;opacity:.75">SOUTH RIDGE BALLISTICS</span></div>';
+   '</div>';
   el.innerHTML=html;
 }
 
@@ -1128,7 +1149,7 @@ function renderGraph(){
   const m2=res.sum;
   const zeroX=sx(s.zero);
   el.innerHTML=
-   '<div class="card-head"><b>TRAJECTORY</b><time>drop (in) vs range (yd)</time></div>'+
+   cardHead('TRAJECTORY')+
    '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg">'+
    grid+labels+
    '<line x1="'+mL+'" y1="'+sy(0)+'" x2="'+(W-mR)+'" y2="'+sy(0)+'" stroke="#8B9464" stroke-width="1.5" stroke-dasharray="6 4"/>'+
@@ -1142,6 +1163,83 @@ function renderGraph(){
    '<div class="card-foot"><span>Bullet path relative to line of sight'+
    (s.incline?'<span style="margin-left:18px">INCLINE: '+(s.incline>0?"+":"")+s.incline+'°</span>':"")+
    '</span></div>';
+}
+
+function renderReticle(){
+  const{s,bdc}=latest, U=s.unit;
+  const el=$("reticleCard");
+  if(!s.reticleOn){el.style.display="none";return;}
+  el.style.display="";
+  const custom=(s.bdcType==="custom" && s.customMarks && s.customMarks.length);
+  const rows=bdc.slice(1).filter(r=>r.rangeYd!==null);
+  if(!rows.length){
+    el.innerHTML='<div class="card-head"><b>RETICLE VIEW</b></div>'+
+      '<p style="font-size:12px;padding:8px 0">No holdover marks resolve for this load and zero.</p>';
+    return;
+  }
+  const maxMark=Math.max(...rows.map(r=>r.mark));
+  const W=460,H=460,CX=230,CY=210,R=205;
+  const viewSpan=maxMark*1.14;           // angular units from center to bottom edge
+  const ppu=(R-14)/viewSpan;             // pixels per MIL/MOA
+  const ink="#1C1A14", dim="#6b6552", accent="#C2543F";
+  let g="";
+
+  // scope tube edge
+  g+='<circle cx="'+CX+'" cy="'+CY+'" r="'+R+'" fill="none" stroke="'+ink+'" stroke-width="2"/>';
+  // fine crosshair
+  g+='<line x1="'+(CX-R+8)+'" y1="'+CY+'" x2="'+(CX+R-8)+'" y2="'+CY+'" stroke="'+ink+'" stroke-width="1.2"/>';
+  g+='<line x1="'+CX+'" y1="'+(CY-R+8)+'" x2="'+CX+'" y2="'+(CY+R-8)+'" stroke="'+ink+'" stroke-width="1.2"/>';
+  // duplex posts
+  const pw=5.5,pl=Math.max(38,R*0.34);
+  g+='<rect x="'+(CX-R+8)+'" y="'+(CY-pw/2)+'" width="'+pl+'" height="'+pw+'" fill="'+ink+'"/>';
+  g+='<rect x="'+(CX+R-8-pl)+'" y="'+(CY-pw/2)+'" width="'+pl+'" height="'+pw+'" fill="'+ink+'"/>';
+  g+='<rect x="'+(CX-pw/2)+'" y="'+(CY-R+8)+'" width="'+pw+'" height="'+pl+'" fill="'+ink+'"/>';
+
+  // wind hashes on the horizontal
+  const windStep=custom?Math.max(0.5,Math.round(maxMark/6*2)/2):s.bdcIncr*(U==="MOA"?2:2);
+  for(let w=windStep;w*ppu<R-18;w+=windStep){
+    const dx=w*ppu, len=8;
+    [CX-dx,CX+dx].forEach(x=>{
+      g+='<line x1="'+x+'" y1="'+(CY-len/2)+'" x2="'+x+'" y2="'+(CY+len/2)+'" stroke="'+ink+'" stroke-width="1.6"/>';
+    });
+  }
+
+  // elevation holdover marks + range labels
+  const dense=rows.length>9;
+  rows.forEach((r,i)=>{
+    const y=CY+r.mark*ppu;
+    if(y>CY+R-10)return;
+    const half=(i%2===0||!dense)?15:9;
+    if(custom){
+      g+='<circle cx="'+CX+'" cy="'+y.toFixed(1)+'" r="4.6" fill="none" stroke="'+ink+'" stroke-width="1.8"/>';
+    }else{
+      g+='<line x1="'+(CX-half)+'" y1="'+y.toFixed(1)+'" x2="'+(CX+half)+'" y2="'+y.toFixed(1)+'" stroke="'+ink+'" stroke-width="1.8"/>';
+    }
+    const showLabel=!dense||i%2===0||i===rows.length-1;
+    if(showLabel){
+      g+='<line x1="'+(CX+half+3)+'" y1="'+y.toFixed(1)+'" x2="'+(CX+R*0.60)+'" y2="'+y.toFixed(1)+'" stroke="'+dim+'" stroke-width="0.7" stroke-dasharray="2 2"/>';
+      g+='<text x="'+(CX+R*0.62)+'" y="'+(y+3.6).toFixed(1)+'" font-size="13" font-weight="700" fill="'+ink+'" font-family="monospace">'+Math.round(r.rangeYd)+'</text>';
+      g+='<text x="'+(CX-half-5)+'" y="'+(y+3.4).toFixed(1)+'" font-size="9.5" text-anchor="end" fill="'+dim+'" font-family="monospace">'+fmtHold(r.mark)+'</text>';
+    }
+  });
+  // zero marker at center
+  g+='<circle cx="'+CX+'" cy="'+CY+'" r="2.6" fill="'+accent+'"/>';
+  g+='<text x="'+(CX+R*0.62)+'" y="'+(CY-6)+'" font-size="13" font-weight="700" fill="'+accent+'" font-family="monospace">'+s.zero+'</text>';
+
+  const magNote=(s.focal==="sfp")?(" @ "+s.curMag+"×"):" · FFP";
+  const today=new Date().toLocaleDateString("en-US",{year:"numeric",month:"short",day:"numeric"});
+  el.innerHTML=
+   cardHead('RETICLE VIEW',(s.focal==="sfp"?'<span style="color:#C2543F"> @ '+s.curMag+'×</span>':''))+
+   '<div class="meta">'+
+   '<div><b>RIFLE:</b> '+esc(s.rifleName||"—")+'</div>'+
+   '<div><b>LOAD:</b> '+esc(s.ammoName||"—")+'</div>'+
+   '<div><b>OPTIC:</b> '+esc(s.scopeName||"—")+' · '+U+(s.focal==="sfp"?" SFP":" FFP")+'</div>'+
+   '<div><b>ZERO:</b> '+s.zero+' yd</div>'+
+   '</div>'+
+   '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:420px;display:block;margin:0 auto" xmlns="http://www.w3.org/2000/svg">'+g+'</svg>'+
+   '<div class="card-foot">'+
+   '<span>Numbers at right = range (yd) each mark hits. Left = mark value in '+U+'.</span>'+
+   '</div>';
 }
 
 /* ================= CALIBER / PRESETS ================= */
@@ -1232,7 +1330,8 @@ function importJson(ev){
 /* ================= PNG DOWNLOAD ================= */
 function drawPng(title,meta,cols,rows,footLines,filename){
   const M=26,W=M*2+cols.reduce((a,c)=>a+c.w,0),rowH=26;
-  const headTop=30,metaTop=62,metaLH=19;
+  const LG=cardLogo?46:0;
+  const headTop=LG?44:30, ruleY=headTop+(LG?14:10), metaTop=ruleY+22, metaLH=19;
   const tableTop=metaTop+meta.length*metaLH+16;
   const footTop=tableTop+34+rows.length*rowH+14, H=footTop+8+footLines.length*18+10;
   const sc=2.5,cv=document.createElement("canvas");
@@ -1241,10 +1340,16 @@ function drawPng(title,meta,cols,rows,footLines,filename){
   const MONO="Menlo,Consolas,monospace";
   ctx.fillStyle="#F2EFE6";ctx.fillRect(0,0,W,H);
   ctx.fillStyle="#1C1A14";
-  ctx.font="bold 16px "+MONO;ctx.fillText(title,M,headTop);
+  let tainted=false;
+  if(LG){ try{ ctx.drawImage(cardLogo,M,headTop-34,LG,LG); }catch(e){ tainted=true; } }
+  const tx=M+(LG?LG+12:0);
+  ctx.font="bold 16px "+MONO;ctx.fillText("SOUTH RIDGE BALLISTICS",tx,headTop-6);
+  ctx.font="10.5px "+MONO;ctx.fillStyle="#4A463A";
+  ctx.fillText(title,tx,headTop+9);
+  ctx.fillStyle="#1C1A14";
   const today=new Date().toLocaleDateString("en-US",{year:"numeric",month:"short",day:"numeric"});
-  ctx.font="11px "+MONO;ctx.fillText(today,W-M-ctx.measureText(today).width,headTop);
-  ctx.fillRect(M,headTop+10,W-M*2,2);
+  ctx.font="11px "+MONO;ctx.fillText(today,W-M-ctx.measureText(today).width,headTop-6);
+  ctx.fillRect(M,ruleY,W-M*2,2);
   ctx.font="11.5px "+MONO;
   meta.forEach((l,i)=>ctx.fillText(l,M,metaTop+14+i*metaLH));
   let y=tableTop,x=M;
@@ -1265,10 +1370,16 @@ function drawPng(title,meta,cols,rows,footLines,filename){
   });
   ctx.fillStyle="#4A463A";ctx.font="10.5px "+MONO;
   footLines.forEach((l,i)=>ctx.fillText(l,M,footTop+8+i*18));
+  try{
   cv.toBlob(b=>{
     const a=document.createElement("a");a.href=URL.createObjectURL(b);
     a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
   },"image/png");
+  } catch(err){
+    // Canvas tainted by the logo (can happen when opened from file://).
+    // Drop the logo and redraw so the export still works.
+    if(cardLogo){ cardLogo=null; drawPng(title,meta,cols,rows,footLines,filename); }
+  }
 }
 
 function downloadPng(){
@@ -1296,7 +1407,7 @@ function downloadPng(){
   const foot=['MAX ORD: +'+sum.maxOrdIn.toFixed(1)+'" @ '+Math.round(sum.maxOrdYd)+" yd"+
     (sum.nearZero!==null?"   NEAR ZERO: "+Math.round(sum.nearZero)+" yd":"")+"   "+sonic,
     "ELEV = dial/hold UP · negative = below zero range",
-    "SOUTH RIDGE BALLISTICS"];
+    ];
   drawPng("DATA ON PREVIOUS ENGAGEMENT",meta,cols,res.rows,foot,
     "dope-card-"+(s.caliber||"rifle").replace(/[^\w.-]+/g,"_")+"-"+s.zero+"yd-zero.png");
 }
@@ -1337,7 +1448,7 @@ function downloadBdcPng(){
     [sfp?markLabel+" = value on reticle; EFF HOLD = true value at "+s.curMag+"×."
         :"Hold the listed "+(custom?"circle":"reticle mark")+"; rounds strike at the paired range.",
      "CTR = center crosshair (zero). Wind full value from "+s.clock+" o'clock.",
-     "SOUTH RIDGE BALLISTICS"],
+    ],
     "bdc-card-"+(s.caliber||"rifle").replace(/[^\w.-]+/g,"_")+".png");
 }
 
@@ -1352,6 +1463,14 @@ document.querySelectorAll("#inputs input, #inputs select").forEach(el=>{
 recalc();
 
 /* ================= PWA ================= */
+let cardLogo=null;
+(function(){
+  const i=new Image();
+  i.crossOrigin="anonymous";
+  i.onload=()=>{cardLogo=i;};
+  i.onerror=()=>{cardLogo=null;};
+  i.src="card-logo.png";
+})();
 if("serviceWorker" in navigator){
   window.addEventListener("load",()=>{
     navigator.serviceWorker.register("service-worker.js").catch(()=>{ /* app works fine without offline cache */ });
