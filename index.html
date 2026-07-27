@@ -951,7 +951,9 @@ function buildAcLoadList(){
   const loads=FACTORY_LOADS[cal]||[];
   const prev=$("acLoad").value;
   $("acLoad").innerHTML=
-    loads.map((l,i)=>'<option value="'+i+'">'+esc(l.name)+'</option>').join("")+
+    loads.map((l,i)=>({l,i}))
+         .sort((a,b)=>a.l.name.localeCompare(b.l.name))
+         .map(({l,i})=>'<option value="'+i+'">'+esc(l.name)+'</option>').join("")+
     '<option value="'+AC_MANUAL+'">Custom / enter manually…</option>';
   if(prev)$("acLoad").value=prev;
   if($("acLoad").selectedIndex<0)$("acLoad").selectedIndex=0;
@@ -1280,7 +1282,9 @@ function caliberChanged(rc=true){
   const loads=FACTORY_LOADS[cal]||[];
   $("presetWrap").style.display=loads.length?"":"none";
   $("ammoPreset").innerHTML='<option value="" disabled selected>Apply a factory load…</option>'+
-    loads.map((l,i)=>'<option value="'+i+'">'+esc(l.name)+' — '+l.bc+' '+l.model+' · '+l.mv+' fps</option>').join("");
+    loads.map((l,i)=>({l,i}))
+         .sort((a,b)=>a.l.name.localeCompare(b.l.name))
+         .map(({l,i})=>'<option value="'+i+'">'+esc(l.name)+' — '+l.bc+' '+l.model+' · '+l.mv+' fps</option>').join("");
   buildAcLoadList();
   if(rc)recalc();
 }
