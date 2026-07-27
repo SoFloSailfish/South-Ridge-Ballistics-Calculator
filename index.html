@@ -175,7 +175,14 @@
   @media print {
     body { background:#fff !important; padding:0 !important; }
     .no-print { display:none !important; }
-    .dope-card { box-shadow:none !important; border:1px solid #888; max-width:100%; }
+    .dope-card {
+      box-shadow:none !important; border:1px solid #888; max-width:100%;
+      break-inside:avoid; page-break-inside:avoid;      /* never split a card across pages */
+      break-before:page; page-break-before:always;      /* start each card on a fresh page */
+      margin-top:0 !important;
+    }
+    /* the first card carrying this class prints with no leading blank page */
+    .dope-card.print-first { break-before:auto; page-break-before:auto; }
   }
 </style>
 </head>
@@ -473,7 +480,10 @@ const FACTORY_LOADS={
   {name:"Hornady Match 75gr BTHP",gr:75,bc:.395,model:"G1",mv:2790},
   {name:"Hornady Varmint Express 55gr V-MAX",gr:55,bc:.255,model:"G1",mv:3240},
   {name:"Federal American Eagle 55gr FMJ",gr:55,bc:.269,model:"G1",mv:3240},
-  {name:"Speer Gold Dot LE Duty 55gr GDSP",gr:55,bc:.243,model:"G1",mv:3220}],
+  {name:"Speer Gold Dot LE Duty 55gr GDSP",gr:55,bc:.243,model:"G1",mv:3220},
+  {name:"Hornady Custom 55gr SP",gr:55,bc:.235,model:"G1",mv:3240},
+  {name:"Hornady American Whitetail 60gr SP",gr:60,bc:.264,model:"G1",mv:3090},
+  {name:"Winchester Deer Season XP 64gr",gr:64,bc:.282,model:"G1",mv:3020}],
  "5.56 NATO":[
   {name:"M193 55gr FMJ",gr:55,bc:.246,model:"G1",mv:3250},
   {name:"M855 62gr FMJ (green tip)",gr:62,bc:.304,model:"G1",mv:3020},
@@ -513,7 +523,9 @@ const FACTORY_LOADS={
   {name:"Remington Core-Lokt 180gr PSP",gr:180,bc:.383,model:"G1",mv:2700},
   {name:"Remington Premier AccuTip 165gr BT",gr:165,bc:.447,model:"G1",mv:2800}],
  ".300 Win Mag":[
-  {name:"Federal Gold Medal 190gr SMK",gr:190,bc:.533,model:"G1",mv:2900}]
+  {name:"Federal Gold Medal 190gr SMK",gr:190,bc:.533,model:"G1",mv:2900},
+  {name:"Federal Power-Shok 150gr JSP",gr:150,bc:.389,model:"G1",mv:3150},
+  {name:"Hornady Precision Hunter 200gr ELD-X",gr:200,bc:.315,model:"G7",mv:2850}]
 };
 const CALIBERS=[".17 HMR",".204 Ruger",".22 LR",".223 Remington","5.56 NATO",".22-250 Remington",".243 Winchester","6mm Creedmoor","6.5 Creedmoor",".270 Winchester","7mm-08 Remington","7mm Rem Mag",".308 Winchester",".30-06 Springfield",".300 Win Mag",".338 Lapua Mag",".45-70 Govt"];
 const CUSTOM="__custom__";
@@ -872,6 +884,17 @@ function recalc(){
   renderGraph();
   renderBdc();
   renderReticle();
+  markFirstPrintCard();
+}
+function markFirstPrintCard(){
+  const cards=[$("card"),$("graphCard"),$("bdcCard"),$("reticleCard")];
+  let first=true;
+  cards.forEach(c=>{
+    if(!c)return;
+    c.classList.remove("print-first");
+    const visible=c.style.display!=="none" && c.innerHTML.trim()!=="";
+    if(visible&&first){ c.classList.add("print-first"); first=false; }
+  });
 }
 
 function trueDope(){
