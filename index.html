@@ -292,9 +292,14 @@
 
       <section class="panel">
         <h2>Ammunition</h2>
-        <label class="field" id="presetWrap"><span>Factory load preset <em>· fills fields below</em></span>
-          <select id="ammoPreset" onchange="applyPreset()"></select>
-        </label>
+        <div class="grid2" id="presetWrap">
+          <label class="field"><span>Brand <em>· factory presets</em></span>
+            <select id="ammoBrand" onchange="brandChanged()"></select>
+          </label>
+          <label class="field"><span>Load <em>· fills fields below</em></span>
+            <select id="ammoPreset" onchange="applyPreset()"></select>
+          </label>
+        </div>
         <label class="field"><span>Load</span><input type="text" id="ammoName"></label>
         <div class="grid2">
           <label class="field"><span>Bullet weight <em>· gr</em></span><input type="number" id="gr" step="1" min="10"></label>
@@ -483,7 +488,87 @@ const FACTORY_LOADS={
   {name:"Speer Gold Dot LE Duty 55gr GDSP",gr:55,bc:.243,model:"G1",mv:3220},
   {name:"Hornady Custom 55gr SP",gr:55,bc:.235,model:"G1",mv:3240},
   {name:"Hornady American Whitetail 60gr SP",gr:60,bc:.264,model:"G1",mv:3090},
-  {name:"Winchester Deer Season XP 64gr",gr:64,bc:.282,model:"G1",mv:3020}],
+  {name:"Winchester Deer Season XP 64gr",gr:64,bc:.282,model:"G1",mv:3020},
+  {name:"Federal Power-Shok 55gr",gr:55,bc:.222,model:"G1",mv:3240},
+  {name:"Federal Gold Medal CenterStrike 77gr",gr:77,bc:.356,model:"G1",mv:2720},
+  {name:"Federal Fusion 62gr",gr:62,bc:.31,model:"G1",mv:3000},
+  {name:"Federal Fusion MSR 62gr",gr:62,bc:.31,model:"G1",mv:2750},
+  {name:"Federal American Eagle 62gr",gr:62,bc:.307,model:"G1",mv:3020},
+  {name:"Federal American Eagle Varmint & Predator 50gr",gr:50,bc:.204,model:"G1",mv:3325},
+  {name:"Federal Trophy Copper 55gr",gr:55,bc:.305,model:"G1",mv:3240},
+  {name:"Federal V-Shok Nosler Ballistic Tip 40gr",gr:40,bc:.221,model:"G1",mv:3700},
+  {name:"Federal V-Shok Speer TNT Green 43gr",gr:43,bc:.151,model:"G1",mv:3600},
+  {name:"Hornady Superformance Match 75gr",gr:75,bc:.395,model:"G1",mv:2930},
+  {name:"Hornady Superformance V-MAX 53gr",gr:53,bc:.29,model:"G1",mv:3465},
+  {name:"Hornady Superformance NTX 35gr",gr:35,bc:.177,model:"G1",mv:4000},
+  {name:"Hornady Superformance CX 50gr",gr:50,bc:.164,model:"G1",mv:3300},
+  {name:"Hornady BLACK 62gr",gr:62,bc:.274,model:"G1",mv:3100},
+  {name:"Hornady American Gunner 55gr",gr:55,bc:.254,model:"G1",mv:3240},
+  {name:"Hornady Critical Defense FTX 55gr",gr:55,bc:.175,model:"G1",mv:3240},
+  {name:"Hornady Critical Defense FTX 73gr",gr:73,bc:.26,model:"G1",mv:2790},
+  {name:"Hornady Frontier FMJ 55gr",gr:55,bc:.243,model:"G1",mv:3240},
+  {name:"Hornady Frontier HP Match 55gr",gr:55,bc:.254,model:"G1",mv:3240},
+  {name:"Hornady Frontier BTHP Match 68gr",gr:68,bc:.355,model:"G1",mv:2960},
+  {name:"Winchester USA (White Box) 55gr",gr:55,bc:.255,model:"G1",mv:3240},
+  {name:"Winchester USA 62gr",gr:62,bc:.283,model:"G1",mv:3100},
+  {name:"Winchester Ballistic Silvertip 55gr",gr:55,bc:.267,model:"G1",mv:3240},
+  {name:"Winchester Ballistic Silvertip Lead-Free 35gr",gr:35,bc:.201,model:"G1",mv:3800},
+  {name:"Winchester Super-X Pointed Soft Point 55gr",gr:55,bc:.197,model:"G1",mv:3240},
+  {name:"Winchester Super-X Power-Point 64gr",gr:64,bc:.257,model:"G1",mv:3020},
+  {name:"Winchester Power Max Bonded 64gr",gr:64,bc:.231,model:"G1",mv:3020},
+  {name:"Winchester Varmint X 40gr",gr:40,bc:.2,model:"G1",mv:3600},
+  {name:"Winchester Varmint X 55gr",gr:55,bc:.255,model:"G1",mv:3240},
+  {name:"Winchester Match 69gr",gr:69,bc:.297,model:"G1",mv:3000},
+  {name:"Remington UMC 55gr",gr:55,bc:.202,model:"G1",mv:3240},
+  {name:"Remington Premier Match 52gr",gr:52,bc:.253,model:"G1",mv:3200},
+  {name:"Remington Premier Match 62gr",gr:62,bc:.205,model:"G1",mv:3025},
+  {name:"Remington Premier Match Sierra MatchKing 69gr",gr:69,bc:.336,model:"G1",mv:3000},
+  {name:"Remington Premier Match Sierra MatchKing 77gr",gr:77,bc:.362,model:"G1",mv:2790},
+  {name:"Remington Premier AccuTip-V 50gr",gr:50,bc:.242,model:"G1",mv:3410},
+  {name:"Remington Premier AccuTip-V 55gr",gr:55,bc:.225,model:"G1",mv:3240},
+  {name:"Remington Core-Lokt Ultra Bonded 62gr",gr:62,bc:.234,model:"G1",mv:3100},
+  {name:"Remington Hog Hammer 62gr",gr:62,bc:.287,model:"G1",mv:3100},
+  {name:"Remington HTP Copper 62gr",gr:62,bc:.287,model:"G1",mv:3100},
+  {name:"Barnes VOR-TX TSX FB 55gr",gr:55,bc:.209,model:"G1",mv:3240},
+  {name:"Nosler Varmageddon FB Tipped 55gr",gr:55,bc:.255,model:"G1",mv:3100},
+  {name:"Nosler Varmageddon FB Tipped 53gr",gr:53,bc:.325,model:"G1",mv:3350},
+  {name:"Nosler Ballistic Tip Varmint 55gr",gr:55,bc:.267,model:"G1",mv:3100},
+  {name:"Nosler Trophy Grade AccuBond 70gr",gr:70,bc:.37,model:"G1",mv:2750},
+  {name:"Nosler RDF Match Grade 70gr",gr:70,bc:.416,model:"G1",mv:2850},
+  {name:"Nosler Custom Competition Match Grade 77gr",gr:77,bc:.34,model:"G1",mv:2550},
+  {name:"Berger BT Target 73gr",gr:73,bc:.348,model:"G1",mv:2820},
+  {name:"Berger OTM Tactical 77gr",gr:77,bc:.374,model:"G1",mv:2750},
+  {name:"Norma Tipstrike Varmint 55gr",gr:55,bc:.245,model:"G1",mv:3215},
+  {name:"Norma Golden Target Match 77gr",gr:77,bc:.372,model:"G1",mv:2789},
+  {name:"Norma TAC / Tactical FMJ 55gr",gr:55,bc:.209,model:"G1",mv:3240},
+  {name:"Sig Sauer Elite Varmint & Predator 55gr",gr:55,bc:.196,model:"G1",mv:3340},
+  {name:"Sig Sauer Elite Copper Hunting HT 60gr",gr:60,bc:.24,model:"G1",mv:3100},
+  {name:"Sig Sauer Elite Match Grade OTM 77gr",gr:77,bc:.362,model:"G1",mv:2750},
+  {name:"Speer Gold Dot Rifle Personal Protection 55gr",gr:55,bc:.222,model:"G1",mv:3220},
+  {name:"Speer Gold Dot Rifle Personal Protection 62gr",gr:62,bc:.31,model:"G1",mv:3000},
+  {name:"Speer Gold Dot Soft Point 75gr",gr:75,bc:.4,model:"G1",mv:2775},
+  {name:"Lapua Scenar-L OTM 69gr",gr:69,bc:.341,model:"G1",mv:2723},
+  {name:"Lapua Naturalis 50gr",gr:50,bc:.197,model:"G1",mv:3330},
+  {name:"Lapua FMJ 55gr",gr:55,bc:.255,model:"G1",mv:3133},
+  {name:"PMC Bronze FMJ-BT 55gr",gr:55,bc:.243,model:"G1",mv:3200},
+  {name:"PMC X-TAC LAP (M855) 62gr",gr:62,bc:.304,model:"G1",mv:3100},
+  {name:"Black Hills Hornady V-MAX 50gr",gr:50,bc:.242,model:"G1",mv:3300},
+  {name:"Black Hills Hornady V-MAX 60gr",gr:60,bc:.265,model:"G1",mv:3050},
+  {name:"Black Hills Barnes TSX 62gr",gr:62,bc:.287,model:"G1",mv:3025},
+  {name:"Black Hills Barnes TSX 55gr",gr:55,bc:.209,model:"G1",mv:3200},
+  {name:"Black Hills Tipped MatchKing (TMK) 77gr",gr:77,bc:.42,model:"G1",mv:2750},
+  {name:"Fiocchi Field Dynamics V-MAX 40gr",gr:40,bc:.2,model:"G1",mv:3650},
+  {name:"Fiocchi Field Dynamics V-MAX 50gr",gr:50,bc:.242,model:"G1",mv:3300},
+  {name:"Fiocchi Field Dynamics V-MAX 55gr",gr:55,bc:.255,model:"G1",mv:3240},
+  {name:"Fiocchi Hyperformance Match (Sierra MatchKing) 69gr",gr:69,bc:.301,model:"G1",mv:2950},
+  {name:"Fiocchi Hyperformance Match (Sierra MatchKing) 77gr",gr:77,bc:.372,model:"G1",mv:2720},
+  {name:"Underwood Controlled Chaos 55gr",gr:55,bc:.278,model:"G1",mv:3250},
+  {name:"Underwood Controlled Chaos 62gr",gr:62,bc:.28,model:"G1",mv:3100},
+  {name:"Sellier & Bellot FMJ 55gr",gr:55,bc:.259,model:"G1",mv:3300},
+  {name:"Magtech FMJ (223A) 55gr",gr:55,bc:.272,model:"G1",mv:3250},
+  {name:"Prvi Partizan (PPU) Match HPBT 69gr",gr:69,bc:.309,model:"G1",mv:2855},
+  {name:"Prvi Partizan (PPU) Match HPBT 75gr",gr:75,bc:.351,model:"G1",mv:2720},
+  {name:"Browning BXV Predator & Varmint 50gr",gr:50,bc:.242,model:"G1",mv:3400}],
  "5.56 NATO":[
   {name:"M193 55gr FMJ",gr:55,bc:.246,model:"G1",mv:3250},
   {name:"M855 62gr FMJ (green tip)",gr:62,bc:.304,model:"G1",mv:3020},
@@ -1275,18 +1360,33 @@ function buildCaliberSelect(){
     CALIBERS.map(c=>'<option>'+esc(c)+'</option>').join("")+
     '<option value="'+CUSTOM+'">Other / custom…</option>';
 }
+// Derive a load's brand (first word, with multi-word brand fixups)
+const BRAND_FIX={Sig:"Sig Sauer",Black:"Black Hills",Prvi:"Prvi Partizan",Sellier:"Sellier & Bellot",Australian:"Australian Outback"};
+function brandOf(name){const w=name.split(" ");return BRAND_FIX[w[0]]||w[0];}
 function caliberChanged(rc=true){
   const isCustom=$("caliber").value===CUSTOM;
   $("calCustomWrap").style.display=isCustom?"":"none";
   const cal=isCustom?$("caliberCustom").value:$("caliber").value;
   const loads=FACTORY_LOADS[cal]||[];
   $("presetWrap").style.display=loads.length?"":"none";
-  $("ammoPreset").innerHTML='<option value="" disabled selected>Apply a factory load…</option>'+
-    loads.map((l,i)=>({l,i}))
-         .sort((a,b)=>a.l.name.localeCompare(b.l.name))
-         .map(({l,i})=>'<option value="'+i+'">'+esc(l.name)+' — '+l.bc+' '+l.model+' · '+l.mv+' fps</option>').join("");
+  // populate brand dropdown (unique, sorted)
+  const brands=[...new Set(loads.map(l=>brandOf(l.name)))].sort((a,b)=>a.localeCompare(b));
+  $("ammoBrand").innerHTML='<option value="" disabled selected>Select brand…</option>'+
+    brands.map(b=>'<option value="'+esc(b)+'">'+esc(b)+'</option>').join("");
+  $("ammoPreset").innerHTML='<option value="" disabled selected>— pick a brand first —</option>';
   buildAcLoadList();
   if(rc)recalc();
+}
+function brandChanged(){
+  const cal=$("caliber").value===CUSTOM?$("caliberCustom").value:$("caliber").value;
+  const loads=FACTORY_LOADS[cal]||[];
+  const brand=$("ammoBrand").value;
+  // keep original index so applyPreset still maps correctly
+  const list=loads.map((l,i)=>({l,i}))
+    .filter(({l})=>brandOf(l.name)===brand)
+    .sort((a,b)=>a.l.name.localeCompare(b.l.name));
+  $("ammoPreset").innerHTML='<option value="" disabled selected>Select load…</option>'+
+    list.map(({l,i})=>'<option value="'+i+'">'+esc(l.name)+' — '+l.bc+' '+l.model+' · '+l.mv+' fps</option>').join("");
 }
 function applyPreset(){
   const cal=$("caliber").value===CUSTOM?$("caliberCustom").value:$("caliber").value;
@@ -1294,7 +1394,6 @@ function applyPreset(){
   if(!l)return;
   $("ammoName").value=l.name;$("gr").value=l.gr;$("bc").value=l.bc;
   $("model").value=l.model;$("mv").value=l.mv;
-  $("ammoPreset").selectedIndex=0;
   recalc();
 }
 
@@ -1486,7 +1585,7 @@ buildCaliberSelect();
 writeState(DEFAULTS);
 refreshProfileList();
 document.querySelectorAll("#inputs input, #inputs select").forEach(el=>{
-  if(["profileSelect","profileName","ammoPreset","caliber","importFile","unit","pMode","trueRange","trueHold","trueMode","mpbrVital","focal","bdcType","acLoad","acGr","acMv","acBc","acModel","acZero"].includes(el.id))return;
+  if(["profileSelect","profileName","ammoPreset","ammoBrand","caliber","importFile","unit","pMode","trueRange","trueHold","trueMode","mpbrVital","focal","bdcType","acLoad","acGr","acMv","acBc","acModel","acZero"].includes(el.id))return;
   el.addEventListener("input",recalc);
 });
 recalc();
