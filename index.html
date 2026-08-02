@@ -26,11 +26,19 @@
   }
   .wrap { max-width:1200px; margin:0 auto; }
   .disclaimer {
-    background:rgba(194,84,63,0.12); border:1px solid rgba(194,84,63,0.5);
-    border-radius:6px; padding:10px 14px; margin-bottom:16px;
-    font-size:12px; line-height:1.5; color:#E7C9C2;
+    display:flex; align-items:center; gap:10px;
+    background:rgba(194,84,63,0.10); border:1px solid rgba(194,84,63,0.4);
+    border-radius:6px; padding:7px 10px 7px 12px; margin-bottom:14px;
+    font-size:11.5px; line-height:1.45; color:#E7C9C2;
   }
   .disclaimer strong { color:#E68A76; letter-spacing:0.02em; }
+  .disclaimer .disc-text { flex:1; }
+  .disclaimer .disc-close {
+    flex-shrink:0; background:transparent; border:1px solid rgba(194,84,63,0.5);
+    color:#E68A76; width:22px; height:22px; border-radius:5px; cursor:pointer;
+    font-size:15px; line-height:1; padding:0; transition:background .15s,border-color .15s;
+  }
+  .disclaimer .disc-close:hover { background:rgba(194,84,63,0.2); border-color:rgba(194,84,63,0.8); }
   .help-overlay {
     position:fixed; inset:0; background:rgba(10,11,12,0.88); z-index:100;
     display:none; align-items:flex-start; justify-content:center; overflow-y:auto; padding:24px 16px;
@@ -86,6 +94,12 @@
     width:52px; height:52px; border-radius:50%; flex-shrink:0;
     border:1px solid rgba(217,164,65,0.45);
   }
+  .version-badge {
+    position:fixed; top:8px; right:10px; z-index:50;
+    font-size:10px; letter-spacing:.04em; color:#6f6a58;
+    font-family:Menlo,Consolas,monospace; user-select:none; pointer-events:none;
+  }
+  @media print { .version-badge { display:none; } }
   @media (max-width:520px){
     h1 { font-size:16px; letter-spacing:.14em; }
     .brand-mark { width:42px; height:42px; }
@@ -188,8 +202,10 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="disclaimer no-print">
-    <strong>Use at your own risk.</strong> This is an unofficial ballistics estimator. Computed data are approximations — always verify against your chronograph, manufacturer data, and real impacts before relying on any output. No warranty; the author assumes no liability for its use.
+  <div class="version-badge no-print" id="versionBadge"></div>
+  <div class="disclaimer no-print" id="disclaimer">
+    <span class="disc-text"><strong>Use at your own risk.</strong> Unofficial estimator — computed data are approximations. Always verify against your chronograph and real impacts. No warranty. <a href="#" onclick="showHelp();return false;" style="color:#E68A76;text-decoration:underline">Details</a></span>
+    <button class="disc-close" onclick="dismissDisclaimer()" title="Dismiss" aria-label="Dismiss disclaimer">×</button>
   </div>
 
   <div class="help-overlay no-print" id="helpOverlay" onclick="if(event.target===this)hideHelp()">
@@ -219,7 +235,7 @@
       <p>Enter your target's <b>vital zone size</b> in inches (≈3–4" for prairie dogs, 8" for coyote/deer vitals) and press <b>Compute</b>. The tool finds the zero that keeps the bullet inside that zone as far as possible, and reports the resulting zero, the 100-yd sight-in height, and the max point blank range — the farthest you can hold dead center without missing high or low. <b>Use This Zero</b> applies it to your setup.</p>
 
       <h3>Ammo Change</h3>
-      <p>Switching loads without re-zeroing from scratch. Pick the load you're changing to (from the factory list, or <b>Custom / enter manually</b> for anything not in it), set the <b>new zero distance</b> you want, and press <b>Compute</b>. The tool reports how many clicks to dial and which direction. <b>Switch To This Load</b> then applies it to your whole setup.</p>
+      <p>Switching loads without re-zeroing from scratch. Pick the <b>brand then the load</b> you're changing to (or choose <b>Custom / enter manually</b> under Brand for anything not in the list), set the <b>new zero distance</b> you want, and press <b>Compute</b>. The tool reports how many clicks to dial and which direction. <b>Switch To This Load</b> then applies it to your whole setup.</p>
       <div class="tip">This is the <b>ballistic</b> difference between the two loads — it gets you on paper. A different bullet can also shift point of impact in your particular barrel for reasons no calculator can predict, so always confirm with a group.</div>
 
       <h3>Reticle View</h3>
@@ -327,6 +343,47 @@
       </section>
 
       <section class="panel">
+        <h2>Card Range</h2>
+        <div class="grid3">
+          <label class="field"><span>Start <em>· yd</em></span><input type="number" id="start" step="25" min="0"></label>
+          <label class="field"><span>End <em>· yd</em></span><input type="number" id="end" step="25" min="25"></label>
+          <label class="field"><span>Step <em>· yd</em></span><input type="number" id="step" step="5" min="5"></label>
+        </div>
+        <div class="checks">
+          <label><input type="checkbox" id="tof"> Time of flight</label>
+          <label><input type="checkbox" id="graphOn"> Trajectory graph</label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>BDC / Reticle Card</h2>
+        <div class="checks">
+          <label><input type="checkbox" id="bdcOn"> Show BDC reticle card</label>
+          <label><input type="checkbox" id="reticleOn"> Show reticle view</label>
+        </div>
+        <div class="grid2">
+          <label class="field"><span>Reticle type</span>
+            <select id="bdcType" onchange="bdcTypeChanged()">
+              <option value="even">Even spacing</option>
+              <option value="custom">Custom marks (BDC circles)</option>
+            </select>
+          </label>
+          <label class="field" id="bdcIncrWrap"><span>Mark spacing <em>· turret unit</em></span><input type="number" id="bdcIncr" step="0.1" min="0.05"></label>
+          <label class="field" id="bdcCountWrap"><span>Number of marks</span><input type="number" id="bdcCount" step="1" min="1" max="30"></label>
+          <label class="field" id="bdcMarksWrap" style="display:none;grid-column:1/-1"><span>Circle subtensions <em>· turret unit, comma-separated</em></span><input type="text" id="bdcMarks" placeholder="0.53, 1.22, 1.91, 3.02"></label>
+          <label class="field"><span>Focal plane</span>
+            <select id="focal" onchange="focalChanged()">
+              <option value="ffp">First (FFP)</option>
+              <option value="sfp">Second (SFP)</option>
+            </select>
+          </label>
+          <label class="field" id="calMagWrap" style="display:none"><span>Reticle true at <em>· ×</em></span><input type="number" id="calMag" step="0.5" min="1" value="16"></label>
+          <label class="field" id="curMagWrap" style="display:none"><span>Current mag <em>· ×</em></span><input type="number" id="curMag" step="0.5" min="1" value="16"></label>
+        </div>
+        <p class="hint" id="bdcNote">Maps each reticle holdover mark to the range it hits for this load — the inverse of the DOPE card. FFP reticles are true at any magnification; SFP reticles are only true at their calibrated power. Custom marks let you enter uneven BDC circle subtensions.</p>
+      </section>
+
+      <section class="panel">
         <h2>Atmosphere &amp; Wind</h2>
         <div class="grid2">
           <label class="field"><span>Temperature <em>· °F</em></span><input type="number" id="temp" step="1"></label>
@@ -377,9 +434,14 @@
       <section class="panel">
         <h2>Ammo Change</h2>
         <p class="hint">Switching loads? This gives the elevation offset to go from your current load and zero to a new one — dial it and you should be on paper without starting over.</p>
-        <label class="field"><span>New load</span>
-          <select id="acLoad" onchange="acLoadChanged()"></select>
-        </label>
+        <div class="grid2">
+          <label class="field"><span>Brand</span>
+            <select id="acBrand" onchange="acBrandChanged()"></select>
+          </label>
+          <label class="field"><span>New load</span>
+            <select id="acLoad" onchange="acLoadChanged()"></select>
+          </label>
+        </div>
         <div class="grid2" id="acManual" style="display:none">
           <label class="field"><span>Bullet weight <em>· gr</em></span><input type="number" id="acGr" step="1" min="10" value="55"></label>
           <label class="field"><span>Muzzle velocity <em>· fps</em></span><input type="number" id="acMv" step="5" min="300" value="3240"></label>
@@ -395,47 +457,6 @@
         </div>
         <div id="acResult" style="display:none"></div>
         <p class="hint" id="acHint">Pick the load you're switching to and the zero you want, then Compute.</p>
-      </section>
-
-      <section class="panel">
-        <h2>Card Range</h2>
-        <div class="grid3">
-          <label class="field"><span>Start <em>· yd</em></span><input type="number" id="start" step="25" min="0"></label>
-          <label class="field"><span>End <em>· yd</em></span><input type="number" id="end" step="25" min="25"></label>
-          <label class="field"><span>Step <em>· yd</em></span><input type="number" id="step" step="5" min="5"></label>
-        </div>
-        <div class="checks">
-          <label><input type="checkbox" id="tof"> Time of flight</label>
-          <label><input type="checkbox" id="graphOn"> Trajectory graph</label>
-        </div>
-      </section>
-
-      <section class="panel">
-        <h2>BDC / Reticle Card</h2>
-        <div class="checks">
-          <label><input type="checkbox" id="bdcOn"> Show BDC reticle card</label>
-          <label><input type="checkbox" id="reticleOn"> Show reticle view</label>
-        </div>
-        <div class="grid2">
-          <label class="field"><span>Reticle type</span>
-            <select id="bdcType" onchange="bdcTypeChanged()">
-              <option value="even">Even spacing</option>
-              <option value="custom">Custom marks (BDC circles)</option>
-            </select>
-          </label>
-          <label class="field" id="bdcIncrWrap"><span>Mark spacing <em>· turret unit</em></span><input type="number" id="bdcIncr" step="0.1" min="0.05"></label>
-          <label class="field" id="bdcCountWrap"><span>Number of marks</span><input type="number" id="bdcCount" step="1" min="1" max="30"></label>
-          <label class="field" id="bdcMarksWrap" style="display:none;grid-column:1/-1"><span>Circle subtensions <em>· turret unit, comma-separated</em></span><input type="text" id="bdcMarks" placeholder="0.53, 1.22, 1.91, 3.02"></label>
-          <label class="field"><span>Focal plane</span>
-            <select id="focal" onchange="focalChanged()">
-              <option value="ffp">First (FFP)</option>
-              <option value="sfp">Second (SFP)</option>
-            </select>
-          </label>
-          <label class="field" id="calMagWrap" style="display:none"><span>Reticle true at <em>· ×</em></span><input type="number" id="calMag" step="0.5" min="1" value="16"></label>
-          <label class="field" id="curMagWrap" style="display:none"><span>Current mag <em>· ×</em></span><input type="number" id="curMag" step="0.5" min="1" value="16"></label>
-        </div>
-        <p class="hint" id="bdcNote">Maps each reticle holdover mark to the range it hits for this load — the inverse of the DOPE card. FFP reticles are true at any magnification; SFP reticles are only true at their calibrated power. Custom marks let you enter uneven BDC circle subtensions.</p>
       </section>
     </div>
 
@@ -455,6 +476,13 @@
 
 <script>
 "use strict";
+/* ================= APP VERSION =================
+   Bump this on every change, following the scheme:
+     1.x.x  MAJOR — large overhaul
+     x.0.x  MINOR — fairly significant change / new feature / new caliber
+     x.x.17 PATCH — small tweak or ammo additions
+   Keep in sync with service-worker.js CACHE_VERSION. */
+const APP_VERSION="1.0.19";
 /* ================= DRAG TABLES ================= */
 const G1=[[0,.2629],[.05,.2558],[.1,.2487],[.15,.2413],[.2,.2344],[.25,.2278],[.3,.2214],[.35,.2155],[.4,.2104],[.45,.2061],[.5,.2032],[.55,.202],[.6,.2034],[.7,.2165],[.725,.223],[.75,.2313],[.775,.2417],[.8,.2546],[.825,.2706],[.85,.2901],[.875,.3136],[.9,.3415],[.925,.3734],[.95,.4084],[.975,.4448],[1,.4805],[1.025,.5136],[1.05,.5427],[1.075,.5677],[1.1,.5883],[1.125,.6053],[1.15,.6191],[1.2,.6393],[1.25,.6518],[1.3,.6589],[1.35,.6621],[1.4,.6625],[1.45,.6607],[1.5,.6573],[1.55,.6528],[1.6,.6474],[1.65,.6413],[1.7,.6347],[1.75,.628],[1.8,.621],[1.85,.6141],[1.9,.6072],[1.95,.6003],[2,.5934],[2.05,.5867],[2.1,.5804],[2.15,.5743],[2.2,.5685],[2.25,.563],[2.3,.5577],[2.35,.5527],[2.4,.5481],[2.45,.5438],[2.5,.5397],[2.6,.5325],[2.7,.5264],[2.8,.5211],[2.9,.5168],[3,.5133],[3.1,.5105],[3.2,.5084],[3.3,.5067],[3.4,.5054],[3.5,.504],[3.6,.503],[3.7,.5022],[3.8,.5016],[3.9,.501],[4,.5006]];
 const G7=[[0,.1198],[.1,.1196],[.2,.1193],[.3,.1194],[.4,.1193],[.5,.1194],[.6,.1194],[.65,.1197],[.7,.1202],[.725,.1207],[.75,.1215],[.775,.1226],[.8,.1242],[.825,.1266],[.85,.1306],[.875,.1368],[.9,.1464],[.925,.166],[.95,.2054],[.975,.2993],[1,.3803],[1.025,.4015],[1.05,.4043],[1.075,.4034],[1.1,.4014],[1.125,.3987],[1.15,.3955],[1.2,.3884],[1.25,.381],[1.3,.3732],[1.35,.3657],[1.4,.358],[1.5,.344],[1.55,.3376],[1.6,.3315],[1.65,.326],[1.7,.3209],[1.75,.316],[1.8,.3117],[1.85,.3078],[1.9,.3042],[1.95,.301],[2,.298],[2.05,.2951],[2.1,.2922],[2.15,.2892],[2.2,.2864],[2.25,.2835],[2.3,.2807],[2.35,.2779],[2.4,.2752],[2.45,.2725],[2.5,.2697],[2.6,.2643],[2.7,.2588],[2.8,.2533],[2.9,.2479],[3,.2424],[3.1,.2368],[3.2,.2313],[3.3,.2258],[3.4,.2205],[3.5,.2154],[3.6,.2106],[3.7,.206],[3.8,.2017],[3.9,.1975],[4,.1935]];
@@ -1503,29 +1531,49 @@ const AC_MANUAL="__manual__";
 function buildAcLoadList(){
   const cal=$("caliber").value===CUSTOM?$("caliberCustom").value:$("caliber").value;
   const loads=FACTORY_LOADS[cal]||[];
-  const prev=$("acLoad").value;
-  $("acLoad").innerHTML=
-    loads.map((l,i)=>({l,i}))
-         .sort((a,b)=>a.l.name.localeCompare(b.l.name))
-         .map(({l,i})=>'<option value="'+i+'">'+esc(l.name)+'</option>').join("")+
+  // Brand dropdown: unique sorted brands, plus a Custom option at the end.
+  const brands=[...new Set(loads.map(l=>brandOf(l.name)))].sort((a,b)=>a.localeCompare(b));
+  $("acBrand").innerHTML=
+    (loads.length?'<option value="" disabled selected>Select brand…</option>':'')+
+    brands.map(b=>'<option value="'+esc(b)+'">'+esc(b)+'</option>').join("")+
     '<option value="'+AC_MANUAL+'">Custom / enter manually…</option>';
-  if(prev)$("acLoad").value=prev;
-  if($("acLoad").selectedIndex<0)$("acLoad").selectedIndex=0;
+  $("acLoad").innerHTML='<option value="" disabled selected>— pick a brand first —</option>';
+  acBrandChanged();
+}
+function acBrandChanged(){
+  const cal=$("caliber").value===CUSTOM?$("caliberCustom").value:$("caliber").value;
+  const loads=FACTORY_LOADS[cal]||[];
+  const brand=$("acBrand").value;
+  if(brand===AC_MANUAL){
+    // manual entry: hide load dropdown choice, show manual fields
+    $("acLoad").innerHTML='<option value="'+AC_MANUAL+'" selected>Manual entry</option>';
+    acLoadChanged();
+    return;
+  }
+  const list=loads.map((l,i)=>({l,i}))
+    .filter(({l})=>brandOf(l.name)===brand)
+    .sort((a,b)=>a.l.name.localeCompare(b.l.name));
+  $("acLoad").innerHTML='<option value="" disabled selected>Select load…</option>'+
+    list.map(({l,i})=>'<option value="'+i+'">'+esc(l.name)+'</option>').join("");
   acLoadChanged();
 }
 function acLoadChanged(){
-  $("acManual").style.display=($("acLoad").value===AC_MANUAL)?"":"none";
+  const manual=($("acBrand").value===AC_MANUAL)||($("acLoad").value===AC_MANUAL);
+  $("acManual").style.display=manual?"":"none";
 }
 function acNewLoad(){
   const s=readState();
-  if($("acLoad").value===AC_MANUAL){
+  const isManual=($("acBrand").value===AC_MANUAL)||($("acLoad").value===AC_MANUAL);
+  if(isManual){
     const gr=parseFloat($("acGr").value), mv=parseFloat($("acMv").value),
           bc=parseFloat($("acBc").value), model=$("acModel").value;
     if(![gr,mv,bc].every(v=>isFinite(v)&&v>0))return null;
     return {name:"Custom "+gr+"gr",gr,mv,bc,model};
   }
   const cal=$("caliber").value===CUSTOM?$("caliberCustom").value:$("caliber").value;
-  const l=(FACTORY_LOADS[cal]||[])[parseInt($("acLoad").value)];
+  const idx=parseInt($("acLoad").value);
+  if(!isFinite(idx))return null;
+  const l=(FACTORY_LOADS[cal]||[])[idx];
   return l?{name:l.name,gr:l.gr,mv:l.mv,bc:l.bc,model:l.model}:null;
 }
 let lastAcLoad=null,lastAcZero=null;
@@ -1897,6 +1945,7 @@ function deleteProfile(){
 }
 function showHelp(){$("helpOverlay").classList.add("show");}
 function hideHelp(){$("helpOverlay").classList.remove("show");}
+function dismissDisclaimer(){const d=$("disclaimer");if(d)d.style.display="none";}
 function exportJson(){
   const s=readState();
   const base=(s.rifleName||s.caliber||"profiles").trim()
@@ -2054,10 +2103,11 @@ buildCaliberSelect();
 writeState(DEFAULTS);
 refreshProfileList();
 document.querySelectorAll("#inputs input, #inputs select").forEach(el=>{
-  if(["profileSelect","profileName","ammoPreset","ammoBrand","caliber","importFile","unit","pMode","trueRange","trueHold","trueMode","mpbrVital","focal","bdcType","acLoad","acGr","acMv","acBc","acModel","acZero"].includes(el.id))return;
+  if(["profileSelect","profileName","ammoPreset","ammoBrand","caliber","importFile","unit","pMode","trueRange","trueHold","trueMode","mpbrVital","focal","bdcType","acBrand","acLoad","acGr","acMv","acBc","acModel","acZero"].includes(el.id))return;
   el.addEventListener("input",recalc);
 });
 recalc();
+(function(){const b=document.getElementById("versionBadge");if(b)b.textContent="Version "+APP_VERSION;})();
 
 /* ================= PWA ================= */
 let cardLogo=null;
